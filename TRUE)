@@ -1,0 +1,1 @@
+BEGIN ORDS.ENABLE_SCHEMA(p_enabled=,p_schema=,p_url_mapping_type=,p_url_mapping_pattern=,p_auto_rest_auth=; COMMIT; END; / 
