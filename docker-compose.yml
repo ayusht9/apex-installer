@@ -5,31 +5,41 @@ services:
     volumes:
       - .:/workspace
     command: >
-      sh -c "if [ ! -f /workspace/apex_install/apex/images/favicon.ico ]; then
-        echo 'Downloading and Extracting APEX images...';
+      sh -c "if [ ! -f /workspace/apex_install/apex/apexins.sql ]; then
+        echo 'Downloading and Extracting full APEX package...';
         apk add --no-cache unzip wget;
         mkdir -p /workspace/apex_install;
         if [ ! -f /workspace/apex_26.1_en.zip ]; then
           echo 'Zip file not found locally. Downloading from Oracle OTN...';
           wget -qO /workspace/apex_26.1_en.zip https://download.oracle.com/otn_software/apex/apex_26.1_en.zip;
         fi;
-        unzip -q /workspace/apex_26.1_en.zip \"apex/images/*\" -d /workspace/apex_install;
+        unzip -q /workspace/apex_26.1_en.zip -d /workspace/apex_install;
         echo 'Extraction complete.';
       else
-        echo 'APEX images already extracted. Skipping.';
+        echo 'APEX already extracted. Skipping.';
       fi"
 
   oracle-db:
     image: container-registry.oracle.com/database/free:latest
     container_name: oracle-db
     ports:
-      - "1521:1521"
-      - "5500:5500"
+      - "1522:1521"
+      - "5501:5500"
     env_file:
       - .env
     volumes:
       - oracle-data:/opt/oracle/oradata
+      - ./apex_install/apex:/opt/oracle/apex
+      - ./setup-scripts-db:/opt/oracle/scripts/setup
+    healthcheck:
+      test: ["CMD-SHELL", "test -f /opt/oracle/oradata/apex_installed.flag || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 40
     restart: unless-stopped
+    depends_on:
+      apex-extractor:
+        condition: service_completed_successfully
 
   ords:
     image: container-registry.oracle.com/database/ords:latest
@@ -41,12 +51,9 @@ services:
     volumes:
       - ords-config:/etc/ords/config
       - ./apex_install/apex/images:/opt/oracle/apex/images
-      - ./setup-scripts:/ords-entrypoint.d
     depends_on:
       oracle-db:
-        condition: service_started
-      apex-extractor:
-        condition: service_completed_successfully
+        condition: service_healthy
     restart: unless-stopped
 
 volumes:

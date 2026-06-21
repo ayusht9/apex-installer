@@ -20,17 +20,19 @@ This repository contains a fully automated local environment for Oracle Database
    ```
 
 ### What happens automatically?
-- **`apex-extractor`**: A lightweight alpine container will automatically download the 250MB APEX installation zip directly from Oracle OTN if it doesn't already exist locally. It will then automatically extract the required static images.
-- **`oracle-db`**: The Oracle 23c Free database will start up.
-- **`ords`**: The ORDS web server will wait for the extraction to finish and the database to start. Upon startup, it will:
-  - Generate its configuration automatically.
-  - Automatically map the extracted static APEX images (`/i/`).
-  - Automatically run `setup-scripts/01_enable_rest.sh` using your `.env` credentials to REST-enable the `PDBADMIN` user.
+- **`apex-extractor`**: A lightweight alpine container will automatically download the 250MB APEX installation zip directly from Oracle OTN if it doesn't already exist locally. It will then automatically extract the full package.
+- **`oracle-db`**: The Oracle 23c Free database will start up. Once created, it automatically runs the `setup-scripts-db/01_install_apex.sh` script, which:
+  - Installs Oracle APEX inside the DB.
+  - Configures APEX REST Endpoints.
+  - Sets APEX Admin and PDBADMIN passwords based on your `.env` file.
+  - **Note:** This DB installation phase takes ~10-15 minutes.
+- **`ords`**: The ORDS web server waits via a Docker healthcheck for the APEX database installation to finish. Once the DB signals completion, ORDS boots, installs its schemas, automatically detects APEX, configures the APEX connection pools, maps the static images, and starts the server.
 
 ## Accessing APEX
 
-Once the containers are healthy, access the APEX environment at:
-[http://localhost:8080/ords/pdbadmin/_sdw/](http://localhost:8080/ords/pdbadmin/_sdw/)
+Once the ORDS container is running, access the APEX environment at:
+- **Workspace Admin**: [http://localhost:8080/ords/apex_admin](http://localhost:8080/ords/apex_admin)
+- **SQL Developer Web**: [http://localhost:8080/ords/pdbadmin/_sdw/](http://localhost:8080/ords/pdbadmin/_sdw/)
 
 Check the `credentials` file for the exact logins and passwords!
 
@@ -41,9 +43,9 @@ Check the `credentials` file for the exact logins and passwords!
 If you need to make changes to this setup on a new machine and want to hand it off to an LLM, provide it with the following prompt to get it up to speed immediately:
 
 > "I have a Docker Compose setup running Oracle Database Free, ORDS, and APEX. The setup is fully automated:
-> 1. Credentials are managed via an `.env` file.
-> 2. An init container (`apex-extractor`) automatically downloads `apex_26.1_en.zip` from Oracle and unzips it to `./apex_install` so static images can be served by ORDS.
-> 3. The ORDS container mounts `./setup-scripts:/ords-entrypoint.d` which contains a script (`01_enable_rest.sh`) that dynamically runs SQLcl using `.env` variables to REST-enable the `PDBADMIN` schema on startup.
-> 4. ORDS automatically detects `/opt/oracle/apex/images` and configures `standalone.static.path`.
+> 1. Credentials are managed via an `.env` file containing `ORACLE_PWD` and `APEX_PWD`.
+> 2. An init container (`apex-extractor`) automatically downloads `apex_26.1_en.zip` and extracts the full package to `./apex_install`.
+> 3. The `oracle-db` container mounts `./setup-scripts-db` to `/opt/oracle/scripts/setup`. The DB automatically executes `01_install_apex.sh` during initialization, which installs APEX, configures REST, and writes a healthcheck flag file when done.
+> 4. The `ords` container waits for the DB's healthcheck, and uses `APEX_PWD` to natively configure APEX connection pools upon installation.
 > 
-> My `docker-compose.yml` mounts the DB volume and the ORDS config volume to persist data across restarts. Please keep this architecture in mind when suggesting any modifications or troubleshooting issues."
+> Please keep this architecture in mind when suggesting any modifications or troubleshooting issues."
