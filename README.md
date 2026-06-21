@@ -9,10 +9,7 @@ This repository contains a fully automated local environment for Oracle Database
 ## Getting Started
 
 1. Clone or copy this repository to your laptop.
-2. Create a `.env` file by copying the provided example:
-   ```bash
-   cp .env.example .env
-   ```
+2. Verify the `.env` file
    (Feel free to modify the passwords in `.env` if desired).
 3. Open a terminal and run:
    ```bash
