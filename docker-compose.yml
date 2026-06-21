@@ -1,0 +1,53 @@
+services:
+  apex-extractor:
+    image: alpine:latest
+    container_name: apex-extractor
+    volumes:
+      - .:/workspace
+    command: >
+      sh -c "if [ ! -f /workspace/apex_install/apex/images/favicon.ico ]; then
+        echo 'Extracting APEX images...';
+        apk add --no-cache unzip;
+        mkdir -p /workspace/apex_install;
+        unzip -q /workspace/apex_26.1_en.zip \"apex/images/*\" -d /workspace/apex_install;
+        echo 'Extraction complete.';
+      else
+        echo 'APEX images already extracted. Skipping.';
+      fi"
+
+  oracle-db:
+    image: container-registry.oracle.com/database/free:latest
+    container_name: oracle-db
+    ports:
+      - "1521:1521"
+      - "5500:5500"
+    environment:
+      ORACLE_PWD: Oracle1234
+    volumes:
+      - oracle-data:/opt/oracle/oradata
+    restart: unless-stopped
+
+  ords:
+    image: container-registry.oracle.com/database/ords:latest
+    container_name: ords
+    ports:
+      - "8080:8080"
+    environment:
+      DBHOST: oracle-db
+      DBPORT: 1521
+      DBSERVICENAME: FREEPDB1
+      ORACLE_PWD: Oracle1234
+    volumes:
+      - ords-config:/etc/ords/config
+      - ./apex_install/apex/images:/opt/oracle/apex/images
+      - ./setup-scripts:/ords-entrypoint.d
+    depends_on:
+      oracle-db:
+        condition: service_started
+      apex-extractor:
+        condition: service_completed_successfully
+    restart: unless-stopped
+
+volumes:
+  oracle-data:
+  ords-config:
