@@ -6,9 +6,13 @@ services:
       - .:/workspace
     command: >
       sh -c "if [ ! -f /workspace/apex_install/apex/images/favicon.ico ]; then
-        echo 'Extracting APEX images...';
-        apk add --no-cache unzip;
+        echo 'Downloading and Extracting APEX images...';
+        apk add --no-cache unzip wget;
         mkdir -p /workspace/apex_install;
+        if [ ! -f /workspace/apex_26.1_en.zip ]; then
+          echo 'Zip file not found locally. Downloading from Oracle OTN...';
+          wget -qO /workspace/apex_26.1_en.zip https://download.oracle.com/otn_software/apex/apex_26.1_en.zip;
+        fi;
         unzip -q /workspace/apex_26.1_en.zip \"apex/images/*\" -d /workspace/apex_install;
         echo 'Extraction complete.';
       else
@@ -21,8 +25,8 @@ services:
     ports:
       - "1521:1521"
       - "5500:5500"
-    environment:
-      ORACLE_PWD: Oracle1234
+    env_file:
+      - .env
     volumes:
       - oracle-data:/opt/oracle/oradata
     restart: unless-stopped
@@ -32,11 +36,8 @@ services:
     container_name: ords
     ports:
       - "8080:8080"
-    environment:
-      DBHOST: oracle-db
-      DBPORT: 1521
-      DBSERVICENAME: FREEPDB1
-      ORACLE_PWD: Oracle1234
+    env_file:
+      - .env
     volumes:
       - ords-config:/etc/ords/config
       - ./apex_install/apex/images:/opt/oracle/apex/images
