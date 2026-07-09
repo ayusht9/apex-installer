@@ -9,18 +9,18 @@ services:
         echo 'Downloading and Extracting full APEX package...';
         apk add --no-cache unzip wget;
         mkdir -p /workspace/apex_install;
-        if [ ! -f /workspace/apex_26.1_en.zip ]; then
+        if [ ! -f /workspace/apex_24.1_en.zip ]; then
           echo 'Zip file not found locally. Downloading from Oracle OTN...';
-          wget -qO /workspace/apex_26.1_en.zip https://download.oracle.com/otn_software/apex/apex_26.1_en.zip;
+          wget -qO /workspace/apex_24.1_en.zip https://download.oracle.com/otn_software/apex/apex_24.1_en.zip;
         fi;
-        unzip -q /workspace/apex_26.1_en.zip -d /workspace/apex_install;
+        unzip -q /workspace/apex_24.1_en.zip -d /workspace/apex_install;
         echo 'Extraction complete.';
       else
         echo 'APEX already extracted. Skipping.';
       fi"
 
   oracle-db:
-    image: container-registry.oracle.com/database/free:latest
+    image: container-registry.oracle.com/database/enterprise:19.3.0.0
     container_name: oracle-db
     ports:
       - "1522:1521"
@@ -42,7 +42,7 @@ services:
         condition: service_completed_successfully
 
   ords:
-    image: container-registry.oracle.com/database/ords:latest
+    image: container-registry.oracle.com/database/ords:24.1.0
     container_name: ords
     ports:
       - "8080:8080"

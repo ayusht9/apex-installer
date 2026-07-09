@@ -12,14 +12,14 @@ echo "Starting APEX installation..."
 
 # Install APEX
 cd /opt/oracle/apex
-sqlplus sys/${ORACLE_PWD}@FREEPDB1 AS SYSDBA @apexins.sql SYSAUX SYSAUX TEMP /i/
+sqlplus sys/${ORACLE_PWD}@ORCLPDB1 AS SYSDBA @apexins.sql SYSAUX SYSAUX TEMP /i/
 
 # Configure REST
 echo "Configuring APEX REST endpoints..."
 (
 echo ${APEX_PWD:-Oracle1234}
 echo ${APEX_PWD:-Oracle1234}
-) | sqlplus -s sys/${ORACLE_PWD}@FREEPDB1 AS SYSDBA @apex_rest_config.sql
+) | sqlplus -s sys/${ORACLE_PWD}@ORCLPDB1 AS SYSDBA @apex_rest_config.sql
 
 # Set Admin Password
 echo "Setting APEX ADMIN password..."
@@ -27,11 +27,11 @@ echo "Setting APEX ADMIN password..."
 echo ADMIN
 echo admin@example.com
 echo ${APEX_PWD:-Oracle1234}
-) | sqlplus -s sys/${ORACLE_PWD}@FREEPDB1 AS SYSDBA @apxchpwd.sql
+) | sqlplus -s sys/${ORACLE_PWD}@ORCLPDB1 AS SYSDBA @apxchpwd.sql
 
 # Unlock PDBADMIN and set password
 echo "Enabling PDBADMIN account..."
-sqlplus -s sys/${ORACLE_PWD}@FREEPDB1 AS SYSDBA <<EOF
+sqlplus -s sys/${ORACLE_PWD}@ORCLPDB1 AS SYSDBA <<EOF
 ALTER USER PDBADMIN ACCOUNT UNLOCK;
 ALTER USER PDBADMIN IDENTIFIED BY "${ORACLE_PWD}";
 EOF

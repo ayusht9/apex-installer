@@ -1,0 +1,6 @@
+https://download.oracle.com/otn_software/apex/apex_24.1_en.zip
+
+https://download.oracle.com/otn_software/java/ords/ords-24.1.0.108.0942.zip
+
+https://www.oracle.com/java/technologies/javase/jdk17-archive-downloads.html
+
