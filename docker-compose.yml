@@ -49,12 +49,15 @@ services:
     image: container-registry.oracle.com/database/ords:24.1.0
     container_name: ords
     ports:
-      - "8080:8080"
+      - "8080:8181"
     env_file:
       - .env
+    environment:
+      - APEX_VER=24.1.0
     volumes:
       - ords-config:/etc/ords/config
-      - apex-install-vol:/opt/oracle/apex
+      - apex-install-vol:/opt/oracle/apex/24.1.0
+      - ./conn_string.txt:/opt/oracle/variables/conn_string.txt
     depends_on:
       oracle-db:
         condition: service_healthy

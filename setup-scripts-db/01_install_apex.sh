@@ -10,6 +10,7 @@ fi
 
 echo "Starting APEX installation..."
 
+cd /opt/oracle/apex
 # Install APEX
 if [ ! -f "/opt/oracle/oradata/apex_core.flag" ]; then
     echo "Installing Core APEX tables (this takes ~15 mins)..."
@@ -35,11 +36,18 @@ fi
 # Set Admin Password
 if [ ! -f "/opt/oracle/oradata/apex_admin.flag" ]; then
     echo "Setting APEX ADMIN password..."
-    (
-    echo ADMIN
-    echo admin@example.com
-    echo ${APEX_PWD:-Secret_Pwd_123}
-    ) | sqlplus -s sys/${ORACLE_PWD}@ORCLPDB1 AS SYSDBA @apxchpwd.sql
+    sqlplus -s sys/${ORACLE_PWD}@ORCLPDB1 AS SYSDBA <<EOF
+@/opt/oracle/apex/core/scripts/set_appun.sql
+alter session set current_schema = &APPUN;
+begin
+    wwv_flow_instance_admin.create_or_update_admin_user (
+        p_username => 'ADMIN',
+        p_email    => 'admin@example.com',
+        p_password => '${APEX_PWD:-Secret_Pwd_123}' );
+    commit;
+end;
+/
+EOF
     touch "/opt/oracle/oradata/apex_admin.flag"
 else
     echo "APEX ADMIN password already set. Skipping."
@@ -55,6 +63,19 @@ EOF
     touch "/opt/oracle/oradata/apex_pdbadmin.flag"
 else
     echo "PDBADMIN account already enabled. Skipping."
+fi
+
+# Unlock APEX users for ORDS
+if [ ! -f "/opt/oracle/oradata/apex_users_unlocked.flag" ]; then
+    echo "Unlocking APEX accounts for ORDS..."
+    sqlplus -s sys/${ORACLE_PWD}@ORCLPDB1 AS SYSDBA <<EOF
+ALTER USER APEX_PUBLIC_USER ACCOUNT UNLOCK;
+ALTER USER APEX_REST_PUBLIC_USER ACCOUNT UNLOCK;
+ALTER USER APEX_LISTENER ACCOUNT UNLOCK;
+EOF
+    touch "/opt/oracle/oradata/apex_users_unlocked.flag"
+else
+    echo "APEX accounts already unlocked. Skipping."
 fi
 
 echo "APEX Installation Complete."
