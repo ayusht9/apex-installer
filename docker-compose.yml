@@ -4,16 +4,20 @@ services:
     container_name: apex-extractor
     volumes:
       - .:/workspace
+      - apex-install-vol:/opt/oracle/apex
     command: >
-      sh -c "if [ ! -f /workspace/apex_install/apex/apexins.sql ]; then
+      sh -c "if [ ! -f /opt/oracle/apex/apexins.sql ]; then
         echo 'Downloading and Extracting full APEX package...';
         apk add --no-cache unzip wget;
-        mkdir -p /workspace/apex_install;
         if [ ! -f /workspace/apex_24.1_en.zip ]; then
           echo 'Zip file not found locally. Downloading from Oracle OTN...';
           wget -qO /workspace/apex_24.1_en.zip https://download.oracle.com/otn_software/apex/apex_24.1_en.zip;
         fi;
-        unzip -q /workspace/apex_24.1_en.zip -d /workspace/apex_install;
+        echo 'Extracting to named volume...';
+        mkdir -p /tmp/apex_extract;
+        unzip -q /workspace/apex_24.1_en.zip -d /tmp/apex_extract;
+        mv /tmp/apex_extract/apex/* /opt/oracle/apex/;
+        rm -rf /tmp/apex_extract;
         echo 'Extraction complete.';
       else
         echo 'APEX already extracted. Skipping.';
@@ -29,7 +33,7 @@ services:
       - .env
     volumes:
       - oracle-data:/opt/oracle/oradata
-      - ./apex_install/apex:/opt/oracle/apex
+      - apex-install-vol:/opt/oracle/apex
       - ./setup-scripts-db:/opt/oracle/scripts/setup
     healthcheck:
       test: ["CMD-SHELL", "test -f /opt/oracle/oradata/apex_installed.flag || exit 1"]
@@ -50,7 +54,7 @@ services:
       - .env
     volumes:
       - ords-config:/etc/ords/config
-      - ./apex_install/apex/images:/opt/oracle/apex/images
+      - apex-install-vol:/opt/oracle/apex
     depends_on:
       oracle-db:
         condition: service_healthy
@@ -59,3 +63,4 @@ services:
 volumes:
   oracle-data:
   ords-config:
+  apex-install-vol:
