@@ -53,12 +53,24 @@ else
     echo "APEX ADMIN password already set. Skipping."
 fi
 
-# Unlock PDBADMIN and set password
+# Unlock PDBADMIN, set password, and REST-enable for SDW
 if [ ! -f "/opt/oracle/oradata/apex_pdbadmin.flag" ]; then
-    echo "Enabling PDBADMIN account..."
+    echo "Enabling PDBADMIN account and REST Services..."
     sqlplus -s sys/${ORACLE_PWD}@ORCLPDB1 AS SYSDBA <<EOF
 ALTER USER PDBADMIN ACCOUNT UNLOCK;
 ALTER USER PDBADMIN IDENTIFIED BY "${ORACLE_PWD}";
+GRANT INHERIT PRIVILEGES ON USER SYS TO ORDS_METADATA;
+BEGIN
+    ORDS.ENABLE_SCHEMA(
+        p_enabled => TRUE,
+        p_schema => 'PDBADMIN',
+        p_url_mapping_type => 'BASE_PATH',
+        p_url_mapping_pattern => 'pdbadmin',
+        p_auto_rest_auth => TRUE
+    );
+    COMMIT;
+END;
+/
 EOF
     touch "/opt/oracle/oradata/apex_pdbadmin.flag"
 else
