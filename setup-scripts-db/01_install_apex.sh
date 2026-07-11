@@ -55,10 +55,27 @@ fi
 
 # Unlock PDBADMIN, set password, and REST-enable for SDW
 if [ ! -f "/opt/oracle/oradata/apex_pdbadmin.flag" ]; then
-    echo "Enabling PDBADMIN account and REST Services..."
+    echo "Enabling PDBADMIN account..."
     sqlplus -s sys/${ORACLE_PWD}@ORCLPDB1 AS SYSDBA <<EOF
 ALTER USER PDBADMIN ACCOUNT UNLOCK;
 ALTER USER PDBADMIN IDENTIFIED BY "${ORACLE_PWD}";
+EOF
+    touch "/opt/oracle/oradata/apex_pdbadmin.flag"
+
+    echo "Spawning background process to REST-enable PDBADMIN once ORDS is ready..."
+    (
+        while true; do
+            RES=$(sqlplus -s sys/${ORACLE_PWD}@ORCLPDB1 AS SYSDBA <<EOF
+set heading off
+set pagesize 0
+set feedback off
+select count(*) from dba_users where username = 'ORDS_METADATA';
+exit;
+EOF
+)
+            if echo "$RES" | grep -q "1"; then
+                echo "ORDS_METADATA found! REST-enabling PDBADMIN..."
+                sqlplus -s sys/${ORACLE_PWD}@ORCLPDB1 AS SYSDBA <<EOF
 GRANT INHERIT PRIVILEGES ON USER SYS TO ORDS_METADATA;
 GRANT SELECT ON DBA_REGISTRY TO PDBADMIN;
 BEGIN
@@ -73,7 +90,11 @@ BEGIN
 END;
 /
 EOF
-    touch "/opt/oracle/oradata/apex_pdbadmin.flag"
+                break
+            fi
+            sleep 10
+        done
+    ) &
 else
     echo "PDBADMIN account already enabled. Skipping."
 fi
