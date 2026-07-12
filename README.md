@@ -11,7 +11,8 @@ This repository contains a fully automated local environment for Oracle 19c Ente
 1. Clone or copy this repository to your laptop.
 2. Verify the `.env` file and create `conn_string.txt`
    (Copy `.env.example` to `.env`, and copy `conn_string.txt.example` to `conn_string.txt`. Feel free to modify the passwords if desired).
-3. Open a terminal and run:
+3. login in to `docker login container-registry.oracle.com`
+4. Open a terminal and run:
    ```bash
    docker compose up -d
    ```
